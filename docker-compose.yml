@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: bimpms-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: ${DB_NAME:-bimpms}
+      MYSQL_USER: ${DB_USER:-bimpms_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-bimpms_password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/01-init-schema.sql:/docker-entrypoint-initdb.d/01-init-schema.sql
+      - ./database/02-seed-data.sql:/docker-entrypoint-initdb.d/02-seed-data.sql
+    networks:
+      - bimpms-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # 后端服务
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bimpms-backend
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-bimpms}
+      DB_USER: ${DB_USER:-bimpms_user}
+      DB_PASSWORD: ${DB_PASSWORD:-bimpms_password}
+      NODE_ENV: production
+      PORT: 3000
+      JWT_SECRET: ${JWT_SECRET:-your-jwt-secret-key-change-this}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    networks:
+      - bimpms-network
+    restart: unless-stopped
+
+  # 前端服务
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/api}
+    container_name: bimpms-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - bimpms-network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  bimpms-network:
+    driver: bridge
