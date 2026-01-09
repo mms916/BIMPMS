@@ -1,0 +1,42 @@
+services:
+  # Web Service
+  - type: web
+    name: bimpms-backend
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DB_HOST
+        fromDatabase:
+          name: bimpms-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: bimpms-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: bimpms-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: bimpms-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: bimpms-db
+          property: password
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+
+databases:
+  - name: bimpms-db
+    databaseName: bimpms
+    user: bimpms_user
+    plan: free
