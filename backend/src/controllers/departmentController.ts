@@ -20,11 +20,11 @@ export const getDepartments = async (
       ORDER BY dept_id
     `;
 
-    const result = await pool.query(query);
+    const [rows] = await pool.query(query);
 
     res.json({
       success: true,
-      data: result.rows,
+      data: rows,
     });
   } catch (error) {
     console.error('获取部门列表失败：', error);
@@ -55,12 +55,12 @@ export const createDepartment = async (
     }
 
     // 检查部门代码是否已存在
-    const existingResult = await pool.query(
-      'SELECT dept_id FROM departments WHERE dept_code = $1',
+    const [existingRows] = await pool.query(
+      'SELECT dept_id FROM departments WHERE dept_code = ?',
       [dept_code]
     );
 
-    const existingDepts = existingResult.rows as any[];
+    const existingDepts = existingRows as any[];
 
     if (Array.isArray(existingDepts) && existingDepts.length > 0) {
       res.status(400).json({
@@ -71,14 +71,20 @@ export const createDepartment = async (
     }
 
     // 创建部门
-    const result = await pool.query(
-      'INSERT INTO departments (dept_name, dept_code) VALUES ($1, $2) RETURNING *',
+    const [result] = await pool.query(
+      'INSERT INTO departments (dept_name, dept_code) VALUES (?, ?)',
       [dept_name, dept_code]
+    );
+
+    // 查询新创建的部门
+    const [newDept] = await pool.query(
+      'SELECT * FROM departments WHERE dept_id = ?',
+      [result.insertId]
     );
 
     res.json({
       success: true,
-      data: result.rows[0],
+      data: newDept[0],
       message: '部门创建成功',
     });
   } catch (error) {
@@ -111,12 +117,12 @@ export const updateDepartment = async (
     }
 
     // 检查部门是否存在
-    const deptResult = await pool.query(
-      'SELECT dept_id FROM departments WHERE dept_id = $1',
+    const [deptRows] = await pool.query(
+      'SELECT dept_id FROM departments WHERE dept_id = ?',
       [id]
     );
 
-    const departments = deptResult.rows as any[];
+    const departments = deptRows as any[];
 
     if (Array.isArray(departments) && departments.length === 0) {
       res.status(404).json({
@@ -127,12 +133,12 @@ export const updateDepartment = async (
     }
 
     // 检查部门代码是否被其他部门使用
-    const existingResult = await pool.query(
-      'SELECT dept_id FROM departments WHERE dept_code = $1 AND dept_id != $2',
+    const [existingRows] = await pool.query(
+      'SELECT dept_id FROM departments WHERE dept_code = ? AND dept_id != ?',
       [dept_code, id]
     );
 
-    const existingDepts = existingResult.rows as any[];
+    const existingDepts = existingRows as any[];
 
     if (Array.isArray(existingDepts) && existingDepts.length > 0) {
       res.status(400).json({
@@ -144,19 +150,19 @@ export const updateDepartment = async (
 
     // 更新部门
     await pool.query(
-      'UPDATE departments SET dept_name = $1, dept_code = $2 WHERE dept_id = $3',
+      'UPDATE departments SET dept_name = ?, dept_code = ? WHERE dept_id = ?',
       [dept_name, dept_code, id]
     );
 
     // 查询更新后的部门
-    const updatedResult = await pool.query(
-      'SELECT * FROM departments WHERE dept_id = $1',
+    const [updatedRows] = await pool.query(
+      'SELECT * FROM departments WHERE dept_id = ?',
       [id]
     );
 
     res.json({
       success: true,
-      data: updatedResult.rows[0],
+      data: updatedRows[0],
       message: '部门更新成功',
     });
   } catch (error) {
@@ -179,12 +185,12 @@ export const deleteDepartment = async (
     const { id } = req.params;
 
     // 检查部门是否存在
-    const deptResult = await pool.query(
-      'SELECT dept_id, dept_name FROM departments WHERE dept_id = $1',
+    const [deptRows] = await pool.query(
+      'SELECT dept_id, dept_name FROM departments WHERE dept_id = ?',
       [id]
     );
 
-    const departments = deptResult.rows as any[];
+    const departments = deptRows as any[];
 
     if (Array.isArray(departments) && departments.length === 0) {
       res.status(404).json({
@@ -195,12 +201,12 @@ export const deleteDepartment = async (
     }
 
     // 检查是否有关联用户
-    const userResult = await pool.query(
-      'SELECT COUNT(*) as count FROM users WHERE dept_id = $1',
+    const [userRows] = await pool.query(
+      'SELECT COUNT(*) as count FROM users WHERE dept_id = ?',
       [id]
     );
 
-    const users = userResult.rows as any[];
+    const users = userRows as any[];
 
     if (Array.isArray(users) && users[0].count > 0) {
       res.status(400).json({
@@ -211,12 +217,12 @@ export const deleteDepartment = async (
     }
 
     // 检查是否有关联项目
-    const projectResult = await pool.query(
-      'SELECT COUNT(*) as count FROM projects WHERE dept_id = $1',
+    const [projectRows] = await pool.query(
+      'SELECT COUNT(*) as count FROM projects WHERE dept_id = ?',
       [id]
     );
 
-    const projects = projectResult.rows as any[];
+    const projects = projectRows as any[];
 
     if (Array.isArray(projects) && projects[0].count > 0) {
       res.status(400).json({
@@ -227,7 +233,7 @@ export const deleteDepartment = async (
     }
 
     // 删除部门
-    await pool.query('DELETE FROM departments WHERE dept_id = $1', [id]);
+    await pool.query('DELETE FROM departments WHERE dept_id = ?', [id]);
 
     res.json({
       success: true,

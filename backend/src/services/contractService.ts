@@ -12,17 +12,17 @@ export const generateContractNo = async (): Promise<string> => {
 
   try {
     // 查询所有合同中最大的合同编号
-    const result = await pool.query(
+    const [rows] = await pool.query(
       `SELECT contract_no
        FROM projects
-       WHERE contract_no LIKE $1
+       WHERE contract_no LIKE ?
        ORDER BY contract_no DESC
        LIMIT 1`,
       [`${prefix}%`]
     );
 
-    if (result.rows.length > 0) {
-      const lastContractNo = result.rows[0].contract_no;
+    if (rows.length > 0) {
+      const lastContractNo = rows[0].contract_no;
       // 提取日期部分和序号
       // 前5位是前缀"局0113"
       // 接下来8位是日期
@@ -55,16 +55,16 @@ export const isContractNoUnique = async (
   excludeProjectId?: number
 ): Promise<boolean> => {
   try {
-    let query = 'SELECT COUNT(*) as count FROM projects WHERE contract_no = $1';
+    let query = 'SELECT COUNT(*) as count FROM projects WHERE contract_no = ?';
     const params: any[] = [contractNo];
 
     if (excludeProjectId) {
-      query += ' AND project_id != $2';
+      query += ' AND project_id != ?';
       params.push(excludeProjectId);
     }
 
-    const result = await pool.query(query, params);
-    const count = result.rows[0].count as number;
+    const [rows] = await pool.query(query, params);
+    const count = rows[0].count as number;
 
     return count === 0;
   } catch (error) {

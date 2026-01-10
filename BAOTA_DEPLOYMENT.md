@@ -107,7 +107,9 @@ password: xxxxxxxx
 
 推荐安装：
 - ✅ **Nginx** (1.20+) - Web 服务器
-- ✅ **MySQL** (8.0+) - 数据库
+- ✅ **MySQL** (5.7 或 8.0+) - 数据库
+  - 💡 **低配置服务器推荐使用 MySQL 5.7**（更节省资源）
+  - 在软件商店搜索 "MySQL"，选择 MySQL 5.7 版本安装
 - ✅ **PM2 管理器** - Node.js 进程管理
 - ✅ **Node.js** (18+) - 后端运行环境
 
@@ -224,7 +226,6 @@ npm install --registry=https://registry.npmmirror.com
 # 服务器配置
 PORT=3000
 NODE_ENV=production
-DB_TYPE=mysql
 
 # 数据库配置（使用宝塔创建的数据库信息）
 DB_HOST=localhost
