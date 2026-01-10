@@ -20,15 +20,15 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     // 查询用户信息（包含部门信息）
-    const [rows] = await pool.query(
+    const result = await pool.query(
       `SELECT u.*, d.dept_name, d.dept_code
        FROM users u
        LEFT JOIN departments d ON u.dept_id = d.dept_id
-       WHERE u.username = ?`,
+       WHERE u.username = $1`,
       [username]
     );
 
-    const users = rows as any[];
+    const users = result.rows as any[];
 
     if (!Array.isArray(users) || users.length === 0) {
       res.status(401).json({
@@ -97,15 +97,15 @@ export const getCurrentUser = async (
     }
 
     // 查询完整用户信息
-    const [rows] = await pool.query(
+    const result = await pool.query(
       `SELECT u.*, d.dept_name, d.dept_code
        FROM users u
        LEFT JOIN departments d ON u.dept_id = d.dept_id
-       WHERE u.user_id = ?`,
+       WHERE u.user_id = $1`,
       [user.user_id]
     );
 
-    const users = rows as any[];
+    const users = result.rows as any[];
 
     if (!Array.isArray(users) || users.length === 0) {
       res.status(404).json({

@@ -1,34 +1,37 @@
-import mysql from 'mysql2/promise';
+import { Pool } from 'pg';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 export const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '3306'),
-  user: process.env.DB_USER || 'root',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'bim_pms',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  charset: 'utf8mb4',
+  max: 20, // 最大连接数
+  idleTimeoutMillis: 30000, // 空闲连接超时时间
+  connectionTimeoutMillis: 2000, // 连接超时时间
 };
 
-// 创建连接池
-export const pool = mysql.createPool(dbConfig);
-
-// 确保所有连接都使用 utf8mb4
-pool.on('connection', function(connection) {
-  connection.query('SET NAMES utf8mb4');
+// 创建 PostgreSQL 连接池
+export const pool = new Pool({
+  host: dbConfig.host,
+  port: dbConfig.port,
+  user: dbConfig.user,
+  password: dbConfig.password,
+  database: dbConfig.database,
+  max: dbConfig.max,
+  idleTimeoutMillis: dbConfig.idleTimeoutMillis,
+  connectionTimeoutMillis: dbConfig.connectionTimeoutMillis,
 });
 
 // 测试数据库连接
 export const testConnection = async () => {
   try {
-    const connection = await pool.getConnection();
+    const client = await pool.connect();
     console.log('✅ 数据库连接成功！');
-    connection.release();
+    client.release();
     return true;
   } catch (error) {
     console.error('❌ 数据库连接失败：', error);

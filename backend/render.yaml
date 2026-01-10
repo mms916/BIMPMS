@@ -10,6 +10,8 @@ services:
         value: production
       - key: PORT
         value: 3000
+      - key: DB_TYPE
+        value: postgres
       - key: DB_HOST
         fromDatabase:
           name: bimpms-db

@@ -31,17 +31,17 @@ export const getUsers = async (
     const params: any[] = [];
 
     if (search) {
-      conditions.push('(u.username LIKE ? OR u.full_name LIKE ?)');
+      conditions.push(`(u.username LIKE $${params.length + 1} OR u.full_name LIKE $${params.length + 2})`);
       params.push(`%${search}%`, `%${search}%`);
     }
 
     if (role) {
-      conditions.push('u.role = ?');
+      conditions.push(`u.role = $${params.length + 1}`);
       params.push(role);
     }
 
     if (dept_id) {
-      conditions.push('u.dept_id = ?');
+      conditions.push(`u.dept_id = $${params.length + 1}`);
       params.push(dept_id);
     }
 
@@ -65,12 +65,12 @@ export const getUsers = async (
       LEFT JOIN departments d ON u.dept_id = d.dept_id
       ${whereClause}
       ORDER BY u.created_at DESC
-      LIMIT ? OFFSET ?
+      LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;
 
     params.push(pageSizeNum, offset);
 
-    const [rows] = await pool.query(query, params);
+    const result = await pool.query(query, params);
 
     // 查询总数
     const countQuery = `
@@ -79,12 +79,12 @@ export const getUsers = async (
       ${whereClause}
     `;
     const countParams = params.slice(0, -2);
-    const [countRows] = await pool.query(countQuery, countParams);
-    const total = (countRows as any)[0].total;
+    const countResult = await pool.query(countQuery, countParams);
+    const total = countResult.rows[0].total as number;
 
     res.json({
       success: true,
-      data: rows,
+      data: result.rows,
       pagination: {
         page: pageNum,
         pageSize: pageSizeNum,
@@ -123,15 +123,15 @@ export const getUserById = async (
         u.updated_at
       FROM users u
       LEFT JOIN departments d ON u.dept_id = d.dept_id
-      WHERE u.user_id = ?
+      WHERE u.user_id = $1
     `;
 
-    const [rows] = await pool.query(query, [id]);
+    const result = await pool.query(query, [id]);
 
-    if (Array.isArray(rows) && rows.length > 0) {
+    if (result.rows.length > 0) {
       res.json({
         success: true,
-        data: (rows as any)[0],
+        data: result.rows[0],
       });
     } else {
       res.status(404).json({
@@ -177,10 +177,12 @@ export const createUser = async (
     }
 
     // 检查用户名是否已存在
-    const [existingUsers] = await pool.query(
-      'SELECT user_id FROM users WHERE username = ?',
+    const existingResult = await pool.query(
+      'SELECT user_id FROM users WHERE username = $1',
       [username]
     );
+
+    const existingUsers = existingResult.rows as any[];
 
     if (Array.isArray(existingUsers) && existingUsers.length > 0) {
       res.status(400).json({
@@ -191,10 +193,12 @@ export const createUser = async (
     }
 
     // 检查部门是否存在
-    const [departments] = await pool.query(
-      'SELECT dept_id FROM departments WHERE dept_id = ?',
+    const deptResult = await pool.query(
+      'SELECT dept_id FROM departments WHERE dept_id = $1',
       [dept_id]
     );
+
+    const departments = deptResult.rows as any[];
 
     if (Array.isArray(departments) && departments.length === 0) {
       res.status(400).json({
@@ -208,23 +212,23 @@ export const createUser = async (
     const defaultPassword = await bcrypt.hash('123', 10);
 
     // 创建用户
-    const [result] = await pool.query(
-      'INSERT INTO users (username, password, full_name, dept_id, role) VALUES (?, ?, ?, ?, ?)',
+    const result = await pool.query(
+      'INSERT INTO users (username, password, full_name, dept_id, role) VALUES ($1, $2, $3, $4, $5) RETURNING user_id',
       [username, defaultPassword, full_name, dept_id, role]
     );
 
     // 查询新创建的用户信息
-    const [newUser] = await pool.query(
+    const newUserResult = await pool.query(
       `SELECT u.user_id, u.username, u.full_name, u.dept_id, d.dept_name, u.role, u.created_at
        FROM users u
        LEFT JOIN departments d ON u.dept_id = d.dept_id
-       WHERE u.user_id = ?`,
-      [(result as any).insertId]
+       WHERE u.user_id = $1`,
+      [result.rows[0].user_id]
     );
 
     res.json({
       success: true,
-      data: (newUser as any)[0],
+      data: newUserResult.rows[0],
       message: '用户创建成功，默认密码为 123',
     });
   } catch (error) {
@@ -266,10 +270,12 @@ export const updateUser = async (
     }
 
     // 检查用户是否存在
-    const [users] = await pool.query(
-      'SELECT user_id FROM users WHERE user_id = ?',
+    const userResult = await pool.query(
+      'SELECT user_id FROM users WHERE user_id = $1',
       [id]
     );
+
+    const users = userResult.rows as any[];
 
     if (Array.isArray(users) && users.length === 0) {
       res.status(404).json({
@@ -280,10 +286,12 @@ export const updateUser = async (
     }
 
     // 检查部门是否存在
-    const [departments] = await pool.query(
-      'SELECT dept_id FROM departments WHERE dept_id = ?',
+    const deptResult = await pool.query(
+      'SELECT dept_id FROM departments WHERE dept_id = $1',
       [dept_id]
     );
+
+    const departments = deptResult.rows as any[];
 
     if (Array.isArray(departments) && departments.length === 0) {
       res.status(400).json({
@@ -295,22 +303,22 @@ export const updateUser = async (
 
     // 更新用户
     await pool.query(
-      'UPDATE users SET full_name = ?, dept_id = ?, role = ? WHERE user_id = ?',
+      'UPDATE users SET full_name = $1, dept_id = $2, role = $3 WHERE user_id = $4',
       [full_name, dept_id, role, id]
     );
 
     // 查询更新后的用户信息
-    const [updatedUser] = await pool.query(
+    const updatedResult = await pool.query(
       `SELECT u.user_id, u.username, u.full_name, u.dept_id, d.dept_name, u.role, u.updated_at
        FROM users u
        LEFT JOIN departments d ON u.dept_id = d.dept_id
-       WHERE u.user_id = ?`,
+       WHERE u.user_id = $1`,
       [id]
     );
 
     res.json({
       success: true,
-      data: (updatedUser as any)[0],
+      data: updatedResult.rows[0],
       message: '用户更新成功',
     });
   } catch (error) {
@@ -343,10 +351,12 @@ export const deleteUser = async (
     }
 
     // 检查用户是否存在
-    const [users] = await pool.query(
-      'SELECT user_id, username FROM users WHERE user_id = ?',
+    const userResult = await pool.query(
+      'SELECT user_id, username FROM users WHERE user_id = $1',
       [id]
     );
+
+    const users = userResult.rows as any[];
 
     if (Array.isArray(users) && users.length === 0) {
       res.status(404).json({
@@ -357,12 +367,14 @@ export const deleteUser = async (
     }
 
     // 检查是否有关联项目
-    const [projects] = await pool.query(
-      'SELECT COUNT(*) as count FROM projects WHERE leader_id = ?',
+    const projectResult = await pool.query(
+      'SELECT COUNT(*) as count FROM projects WHERE leader_id = $1',
       [id]
     );
 
-    if (Array.isArray(projects) && (projects as any)[0].count > 0) {
+    const projects = projectResult.rows as any[];
+
+    if (Array.isArray(projects) && projects[0].count > 0) {
       res.status(400).json({
         success: false,
         message: '该用户存在关联项目，无法删除',
@@ -371,12 +383,14 @@ export const deleteUser = async (
     }
 
     // 检查是否是参与人员
-    const [participantProjects] = await pool.query(
-      'SELECT COUNT(*) as count FROM project_participants WHERE user_id = ?',
+    const participantResult = await pool.query(
+      'SELECT COUNT(*) as count FROM project_participants WHERE user_id = $1',
       [id]
     );
 
-    if (Array.isArray(participantProjects) && (participantProjects as any)[0].count > 0) {
+    const participantProjects = participantResult.rows as any[];
+
+    if (Array.isArray(participantProjects) && participantProjects[0].count > 0) {
       res.status(400).json({
         success: false,
         message: '该用户参与了项目，无法删除',
@@ -385,7 +399,7 @@ export const deleteUser = async (
     }
 
     // 删除用户
-    await pool.query('DELETE FROM users WHERE user_id = ?', [id]);
+    await pool.query('DELETE FROM users WHERE user_id = $1', [id]);
 
     res.json({
       success: true,
@@ -411,10 +425,12 @@ export const resetPassword = async (
     const { id } = req.params;
 
     // 检查用户是否存在
-    const [users] = await pool.query(
-      'SELECT user_id FROM users WHERE user_id = ?',
+    const userResult = await pool.query(
+      'SELECT user_id FROM users WHERE user_id = $1',
       [id]
     );
+
+    const users = userResult.rows as any[];
 
     if (Array.isArray(users) && users.length === 0) {
       res.status(404).json({
@@ -429,7 +445,7 @@ export const resetPassword = async (
 
     // 重置密码
     await pool.query(
-      'UPDATE users SET password = ? WHERE user_id = ?',
+      'UPDATE users SET password = $1 WHERE user_id = $2',
       [defaultPassword, id]
     );
 

@@ -42,20 +42,20 @@ export const getProjects = async (
 
     // 根据用户角色添加权限过滤条件
     if (user.role === UserRole.DEPT_MANAGER) {
-      conditions.push('p.dept_id = ?');
+      conditions.push(`p.dept_id = $${params.length + 1}`);
       params.push(user.dept_id);
     } else if (user.role === UserRole.PROJECT_MANAGER) {
-      conditions.push('p.leader_id = ?');
+      conditions.push(`p.leader_id = $${params.length + 1}`);
       params.push(user.user_id);
     } else if (user.role === UserRole.EMPLOYEE) {
-      conditions.push('JSON_CONTAINS(p.participants, ?)');
-      params.push(JSON.stringify(user.user_id));
+      conditions.push(`p.participants::jsonb @> $${params.length + 1}::jsonb`);
+      params.push(JSON.stringify([user.user_id]));
     }
 
     // 搜索条件
     if (search) {
       conditions.push(
-        '(p.contract_no LIKE ? OR p.contract_name LIKE ? OR u.full_name LIKE ?)'
+        `(p.contract_no LIKE $${params.length + 1} OR p.contract_name LIKE $${params.length + 2} OR u.full_name LIKE $${params.length + 3})`
       );
       const searchPattern = `%${search}%`;
       params.push(searchPattern, searchPattern, searchPattern);
@@ -63,49 +63,49 @@ export const getProjects = async (
 
     // 项目类型筛选
     if (projectType) {
-      conditions.push('p.project_type = ?');
+      conditions.push(`p.project_type = $${params.length + 1}`);
       params.push(projectType);
     }
 
     // 结算状态筛选
     if (settlementStatus) {
-      conditions.push('p.settlement_status = ?');
+      conditions.push(`p.settlement_status = $${params.length + 1}`);
       params.push(settlementStatus);
     }
 
     // 项目负责人筛选
     if (leaderId) {
-      conditions.push('p.leader_id = ?');
+      conditions.push(`p.leader_id = $${params.length + 1}`);
       params.push(leaderId);
     }
 
     // 是否逾期筛选
     if (isOverdue === 'true') {
-      conditions.push('(p.end_date < CURDATE() AND p.progress < 100)');
+      conditions.push('(p.end_date < CURRENT_DATE AND p.progress < 100)');
     } else if (isOverdue === 'false') {
-      conditions.push('(p.end_date >= CURDATE() OR p.progress >= 100)');
+      conditions.push('(p.end_date >= CURRENT_DATE OR p.progress >= 100)');
     }
 
     const whereClause =
       conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     // 查询总数
-    const [countResult] = await pool.query(
+    const countResult = await pool.query(
       `SELECT COUNT(*) as total
        FROM projects p
        LEFT JOIN users u ON p.leader_id = u.user_id
        ${whereClause}`,
       params
     );
-    const total = (countResult as any)[0].total;
+    const total = countResult.rows[0].total as number;
 
     // 查询项目列表
-    const [projects] = await pool.query(
+    const projectsResult = await pool.query(
       `SELECT p.*,
               u.full_name as leader_name,
               d.dept_name,
               CASE
-                WHEN p.end_date < CURDATE() AND p.progress < 100 THEN 1
+                WHEN p.end_date < CURRENT_DATE AND p.progress < 100 THEN 1
                 ELSE 0
               END as is_overdue
        FROM projects p
@@ -113,12 +113,12 @@ export const getProjects = async (
        LEFT JOIN departments d ON p.dept_id = d.dept_id
        ${whereClause}
        ORDER BY p.${sortBy} ${sortOrder}
-       LIMIT ? OFFSET ?`,
+       LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
       [...params, size, offset]
     );
 
     // 处理参与人员字段
-    const projectList = (projects as any[]).map((project) => {
+    const projectList = (projectsResult.rows as any[]).map((project) => {
       // 参与人员字段可能已经是数组或需要解析
       let participants = [];
       if (project.participants) {
@@ -175,16 +175,18 @@ export const getProjectById = async (
     const { id } = req.params;
     const user = req.user!;
 
-    const [projects] = await pool.query<any[]>(
+    const result = await pool.query<any>(
       `SELECT p.*,
               u.full_name as leader_name,
               d.dept_name
        FROM projects p
        LEFT JOIN users u ON p.leader_id = u.user_id
        LEFT JOIN departments d ON p.dept_id = d.dept_id
-       WHERE p.project_id = ?`,
+       WHERE p.project_id = $1`,
       [id]
     );
+
+    const projects = result.rows as any[];
 
     if (!Array.isArray(projects) || projects.length === 0) {
       res.status(404).json({
@@ -228,10 +230,12 @@ export const createProject = async (
     let deptId = projectData.dept_id;
 
     if (projectData.leader_name && !projectData.leader_id) {
-      const [users] = await pool.query<any[]>(
-        'SELECT user_id, dept_id FROM users WHERE full_name = ?',
+      const userResult = await pool.query<any>(
+        'SELECT user_id, dept_id FROM users WHERE full_name = $1',
         [projectData.leader_name]
       );
+
+      const users = userResult.rows as any[];
 
       if (Array.isArray(users) && users.length > 0) {
         leaderId = users[0].user_id;
@@ -241,8 +245,8 @@ export const createProject = async (
         const bcrypt = require('bcrypt');
         const defaultPassword = await bcrypt.hash('password123', 10);
 
-        const [insertResult] = await pool.query<any>(
-          'INSERT INTO users (username, full_name, password, role, dept_id) VALUES (?, ?, ?, ?, ?)',
+        const insertResult = await pool.query<any>(
+          'INSERT INTO users (username, full_name, password, role, dept_id) VALUES ($1, $2, $3, $4, $5) RETURNING user_id',
           [
             projectData.leader_name, // 使用姓名作为用户名
             projectData.leader_name,
@@ -252,7 +256,7 @@ export const createProject = async (
           ]
         );
 
-        leaderId = (insertResult as any).insertId;
+        leaderId = insertResult.rows[0].user_id;
         deptId = deptId || user.dept_id || 1;
       }
     }
@@ -332,47 +336,39 @@ export const createProject = async (
     }
 
     // 插入项目数据
-    // 先获取连接并设置字符集
-    const connection = await pool.getConnection();
-    try {
-      await connection.query('SET NAMES utf8mb4');
+    const result = await pool.query(
+      `INSERT INTO projects (
+        contract_no, contract_name, start_date, end_date,
+        contract_amount, progress, leader_id, settlement_status,
+        participants, is_signed, payment_amount, dept_id,
+        project_type, remark, created_by
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING project_id`,
+      [
+        projectData.contract_no,
+        projectData.contract_name,
+        projectData.start_date,
+        projectData.end_date,
+        projectData.contract_amount,
+        projectData.progress || 0,
+        leaderId,
+        projectData.settlement_status || SettlementStatus.UNSETTLED,
+        projectData.participants ? JSON.stringify(projectData.participants) : null,
+        projectData.is_signed || '未签订',
+        projectData.payment_amount || 0,
+        deptId,
+        projectData.project_type,
+        projectData.remark || null,
+        user.user_id,
+      ]
+    );
 
-      const [result] = await connection.query(
-        `INSERT INTO projects (
-          contract_no, contract_name, start_date, end_date,
-          contract_amount, progress, leader_id, settlement_status,
-          participants, is_signed, payment_amount, dept_id,
-          project_type, remark, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          projectData.contract_no,
-          projectData.contract_name,
-          projectData.start_date,
-          projectData.end_date,
-          projectData.contract_amount,
-          projectData.progress || 0,
-          leaderId,
-          projectData.settlement_status || SettlementStatus.UNSETTLED,
-          projectData.participants ? JSON.stringify(projectData.participants) : null,
-          projectData.is_signed || '未签订',
-          projectData.payment_amount || 0,
-          deptId,
-          projectData.project_type,
-          projectData.remark || null,
-          user.user_id,
-        ]
-      );
-
-      res.status(201).json({
-        success: true,
-        data: {
-          project_id: (result as any).insertId,
-          message: '项目创建成功',
-        },
-      });
-    } finally {
-      connection.release();
-    }
+    res.status(201).json({
+      success: true,
+      data: {
+        project_id: result.rows[0].project_id,
+        message: '项目创建成功',
+      },
+    });
   } catch (error) {
     console.error('创建项目失败：', error);
     res.status(500).json({
@@ -398,10 +394,12 @@ export const updateProject = async (
     let leaderId = projectData.leader_id;
 
     if (projectData.leader_name && !projectData.leader_id) {
-      const [users] = await pool.query<any[]>(
-        'SELECT user_id, dept_id FROM users WHERE full_name = ?',
+      const userResult = await pool.query<any>(
+        'SELECT user_id, dept_id FROM users WHERE full_name = $1',
         [projectData.leader_name]
       );
+
+      const users = userResult.rows as any[];
 
       if (Array.isArray(users) && users.length > 0) {
         leaderId = users[0].user_id;
@@ -414,8 +412,8 @@ export const updateProject = async (
         const bcrypt = require('bcrypt');
         const defaultPassword = await bcrypt.hash('password123', 10);
 
-        const [insertResult] = await pool.query<any>(
-          'INSERT INTO users (username, full_name, password, role, dept_id) VALUES (?, ?, ?, ?, ?)',
+        const insertResult = await pool.query<any>(
+          'INSERT INTO users (username, full_name, password, role, dept_id) VALUES ($1, $2, $3, $4, $5) RETURNING user_id',
           [
             projectData.leader_name,
             projectData.leader_name,
@@ -425,7 +423,7 @@ export const updateProject = async (
           ]
         );
 
-        leaderId = (insertResult as any).insertId;
+        leaderId = insertResult.rows[0].user_id;
         if (!projectData.dept_id) {
           projectData.dept_id = user.dept_id || 1;
         }
@@ -489,12 +487,12 @@ export const updateProject = async (
     for (const field of allowedFields) {
       if (projectData[field] !== undefined) {
         if (field === 'participants') {
-          updateFields.push(`${field} = ?`);
+          updateFields.push(`${field} = $${updateValues.length + 1}`);
           updateValues.push(
             projectData[field] ? JSON.stringify(projectData[field]) : null
           );
         } else {
-          updateFields.push(`${field} = ?`);
+          updateFields.push(`${field} = $${updateValues.length + 1}`);
           updateValues.push(projectData[field]);
         }
       }
@@ -509,13 +507,13 @@ export const updateProject = async (
     }
 
     // 添加更新人和更新时间
-    updateFields.push('updated_by = ?');
+    updateFields.push(`updated_by = $${updateValues.length + 1}`);
     updateValues.push(user.user_id);
 
     updateValues.push(id);
 
     await pool.query(
-      `UPDATE projects SET ${updateFields.join(', ')} WHERE project_id = ?`,
+      `UPDATE projects SET ${updateFields.join(', ')} WHERE project_id = $${updateValues.length}`,
       updateValues
     );
 
@@ -544,7 +542,7 @@ export const deleteProject = async (
   try {
     const { id } = req.params;
 
-    await pool.query('DELETE FROM projects WHERE project_id = ?', [id]);
+    await pool.query('DELETE FROM projects WHERE project_id = $1', [id]);
 
     res.json({
       success: true,
@@ -585,39 +583,39 @@ export const getProjectStats = async (
 
     // 1. 权限过滤条件（保持原有逻辑）
     if (user.role === UserRole.DEPT_MANAGER) {
-      whereClause = 'WHERE dept_id = ?';
+      whereClause = `WHERE dept_id = $${params.length + 1}`;
       params.push(user.dept_id);
     } else if (user.role === UserRole.PROJECT_MANAGER) {
-      whereClause = 'WHERE leader_id = ?';
+      whereClause = `WHERE leader_id = $${params.length + 1}`;
       params.push(user.user_id);
     } else if (user.role === UserRole.EMPLOYEE) {
-      whereClause = 'WHERE JSON_CONTAINS(participants, ?)';
-      params.push(JSON.stringify(user.user_id));
+      whereClause = `WHERE participants::jsonb @> $${params.length + 1}::jsonb`;
+      params.push(JSON.stringify([user.user_id]));
     }
 
     // 2. 筛选条件（在权限过滤基础上添加）
     const conditions: string[] = [];
 
     if (search) {
-      conditions.push('(p.contract_no LIKE ? OR p.contract_name LIKE ?)');
+      conditions.push(`(p.contract_no LIKE $${params.length + 1} OR p.contract_name LIKE $${params.length + 2})`);
       params.push(`%${search}%`, `%${search}%`);
     }
 
     if (projectType) {
-      conditions.push('p.project_type = ?');
+      conditions.push(`p.project_type = $${params.length + 1}`);
       params.push(projectType);
     }
 
     if (settlementStatus) {
-      conditions.push('p.settlement_status = ?');
+      conditions.push(`p.settlement_status = $${params.length + 1}`);
       params.push(settlementStatus);
     }
 
     if (isOverdue !== undefined) {
       if (isOverdue === 'true') {
-        conditions.push('p.end_date < CURDATE() AND p.progress < 100');
+        conditions.push('p.end_date < CURRENT_DATE AND p.progress < 100');
       } else {
-        conditions.push('(p.end_date >= CURDATE() OR p.progress >= 100)');
+        conditions.push('(p.end_date >= CURRENT_DATE OR p.progress >= 100)');
       }
     }
 
@@ -630,10 +628,10 @@ export const getProjectStats = async (
     }
 
     // 查询统计数据
-    const [stats] = await pool.query<any[]>(
+    const statsResult = await pool.query<any>(
       `SELECT
         COUNT(*) as totalProjects,
-        SUM(CASE WHEN p.end_date < CURDATE() AND p.progress < 100 THEN 1 ELSE 0 END) as overdueProjects,
+        SUM(CASE WHEN p.end_date < CURRENT_DATE AND p.progress < 100 THEN 1 ELSE 0 END) as overdueProjects,
         SUM(p.contract_amount) as totalAmount,
         SUM(CASE WHEN p.settlement_status = '结算完成' THEN 1 ELSE 0 END) as settledProjects,
         AVG(p.progress) as avgProgress
@@ -642,7 +640,7 @@ export const getProjectStats = async (
       params
     );
 
-    const stat = stats[0];
+    const stat = statsResult.rows[0];
     const settledRatio =
       stat.totalProjects > 0
         ? (stat.settledProjects / stat.totalProjects) * 100
