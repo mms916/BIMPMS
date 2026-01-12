@@ -1,7 +1,25 @@
 {
   "permissions": {
     "allow": [
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker pull:*)",
+      "Bash(docker-compose down:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(docker exec:*)",
+      "Bash(UPDATE users SET password='$2b$10$QGbzIZ1QhqUZwTlopSrfUe1D/oEjznKlES0cHFGqg3zW18zjgir2u' WHERE username='admin')",
+      "Bash(__NEW_LINE__ EOF)",
+      "Bash(ipconfig:*)",
+      "Bash(findstr:*)",
+      "Bash(docker volume rm:*)",
+      "Bash(SET FOREIGN_KEY_CHECKS=0)",
+      "Bash(__NEW_LINE__ DROP TABLE IF EXISTS project_participants)",
+      "Bash(__NEW_LINE__ DROP TABLE IF EXISTS projects)",
+      "Bash(__NEW_LINE__ DROP TABLE IF EXISTS users)",
+      "Bash(__NEW_LINE__ DROP TABLE IF EXISTS departments)",
+      "Bash(__NEW_LINE__ SET FOREIGN_KEY_CHECKS=1)",
+      "Bash(__NEW_LINE__ SCRIPT)",
+      "Bash(docker logs:*)"
     ]
   }
 }

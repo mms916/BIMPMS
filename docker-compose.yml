@@ -10,8 +10,16 @@ services:
       MYSQL_DATABASE: ${DB_NAME:-bimpms}
       MYSQL_USER: ${DB_USER:-bimpms_user}
       MYSQL_PASSWORD: ${DB_PASSWORD:-bimpms_password}
-    ports:
-      - "3306:3306"
+      # 设置字符集为utf8mb4
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+    # 不暴露端口到主机，只在Docker内部网络使用
+    # ports:
+    #   - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./database/01-init-schema.sql:/docker-entrypoint-initdb.d/01-init-schema.sql
@@ -54,7 +62,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/api}
+        VITE_API_BASE_URL: /api
     container_name: bimpms-frontend
     ports:
       - "80:80"
