@@ -19,7 +19,7 @@ export const generateContractNo = async (): Promise<string> => {
        ORDER BY contract_no DESC
        LIMIT 1`,
       [`${prefix}%`]
-    );
+    ) as any[];
 
     if (rows.length > 0) {
       const lastContractNo = rows[0].contract_no;
@@ -63,7 +63,7 @@ export const isContractNoUnique = async (
       params.push(excludeProjectId);
     }
 
-    const [rows] = await pool.query(query, params);
+    const [rows] = await pool.query(query, params) as any[];
     const count = rows[0].count as number;
 
     return count === 0;

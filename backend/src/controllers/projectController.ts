@@ -96,7 +96,7 @@ export const getProjects = async (
        LEFT JOIN users u ON p.leader_id = u.user_id
        ${whereClause}`,
       params
-    );
+    ) as any[];
     const total = countRows[0].total as number;
 
     // 查询项目列表
@@ -360,7 +360,7 @@ export const createProject = async (
         projectData.remark || null,
         user.user_id,
       ]
-    );
+    ) as any[];
 
     res.status(201).json({
       success: true,
@@ -413,7 +413,7 @@ export const updateProject = async (
         const defaultPassword = await bcrypt.hash('password123', 10);
 
         const insertResult = await pool.query<any>(
-          'INSERT INTO users (username, full_name, password, role, dept_id) VALUES ($1, $2, $3, $4, $5) RETURNING user_id',
+          'INSERT INTO users (username, full_name, password, role, dept_id) VALUES (?, ?, ?, ?, ?)',
           [
             projectData.leader_name,
             projectData.leader_name,
@@ -421,9 +421,9 @@ export const updateProject = async (
             'employee',
             projectData.dept_id || user.dept_id || 1
           ]
-        );
+        ) as any[];
 
-        leaderId = insertResult.rows[0].user_id;
+        leaderId = insertResult[0].insertId;
         if (!projectData.dept_id) {
           projectData.dept_id = user.dept_id || 1;
         }

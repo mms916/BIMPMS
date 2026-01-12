@@ -1,5 +1,5 @@
 // 用户角色枚举
-export enum UserRole {
+export const enum UserRole {
   ADMIN = 'admin',
   DEPT_MANAGER = 'dept_manager',
   PROJECT_MANAGER = 'project_manager',
@@ -7,20 +7,20 @@ export enum UserRole {
 }
 
 // 结算状态枚举
-export enum SettlementStatus {
+export const enum SettlementStatus {
   UNSETTLED = '未结算',
   PARTIAL = '部分结算',
   COMPLETED = '结算完成',
 }
 
 // 是否签订枚举
-export enum IsSigned {
+export const enum IsSigned {
   SIGNED = '已签订',
   UNSIGNED = '未签订',
 }
 
 // 项目类型枚举
-export enum ProjectType {
+export const enum ProjectType {
   CONSTRUCTION = '建筑施工',
   INTERIOR = '室内设计',
   LANDSCAPE = '园林景观',

@@ -70,7 +70,7 @@ export const getUsers = async (
 
     params.push(pageSizeNum, offset);
 
-    const [rows] = await pool.query(query, params);
+    const [rows] = await pool.query(query, params) as any[];
 
     // 查询总数
     const countQuery = `
@@ -79,7 +79,7 @@ export const getUsers = async (
       ${whereClause}
     `;
     const countParams = params.slice(0, -2);
-    const [countRows] = await pool.query(countQuery, countParams);
+    const [countRows] = await pool.query(countQuery, countParams) as any[];
     const total = countRows[0].total as number;
 
     res.json({
@@ -126,7 +126,7 @@ export const getUserById = async (
       WHERE u.user_id = ?
     `;
 
-    const [rows] = await pool.query(query, [id]);
+    const [rows] = await pool.query(query, [id]) as any[];
 
     if (rows.length > 0) {
       res.json({
@@ -215,7 +215,7 @@ export const createUser = async (
     const [result] = await pool.query(
       'INSERT INTO users (username, password, full_name, dept_id, role) VALUES (?, ?, ?, ?, ?)',
       [username, defaultPassword, full_name, dept_id, role]
-    );
+    ) as any[];
 
     // 查询新创建的用户信息
     const [newUserRows] = await pool.query(
@@ -224,7 +224,7 @@ export const createUser = async (
        LEFT JOIN departments d ON u.dept_id = d.dept_id
        WHERE u.user_id = ?`,
       [result.insertId]
-    );
+    ) as any[];
 
     res.json({
       success: true,
@@ -314,7 +314,7 @@ export const updateUser = async (
        LEFT JOIN departments d ON u.dept_id = d.dept_id
        WHERE u.user_id = ?`,
       [id]
-    );
+    ) as any[];
 
     res.json({
       success: true,
@@ -352,11 +352,11 @@ export const deleteUser = async (
 
     // 检查用户是否存在
     const userResult = await pool.query(
-      'SELECT user_id, username FROM users WHERE user_id = $1',
+      'SELECT user_id, username FROM users WHERE user_id = ?',
       [id]
-    );
+    ) as any[];
 
-    const users = userResult.rows as any[];
+    const users = userResult[0] as any[];
 
     if (Array.isArray(users) && users.length === 0) {
       res.status(404).json({

@@ -74,13 +74,13 @@ export const createDepartment = async (
     const [result] = await pool.query(
       'INSERT INTO departments (dept_name, dept_code) VALUES (?, ?)',
       [dept_name, dept_code]
-    );
+    ) as any[];
 
     // 查询新创建的部门
     const [newDept] = await pool.query(
       'SELECT * FROM departments WHERE dept_id = ?',
       [result.insertId]
-    );
+    ) as any[];
 
     res.json({
       success: true,
@@ -158,7 +158,7 @@ export const updateDepartment = async (
     const [updatedRows] = await pool.query(
       'SELECT * FROM departments WHERE dept_id = ?',
       [id]
-    );
+    ) as any[];
 
     res.json({
       success: true,
