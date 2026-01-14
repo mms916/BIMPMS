@@ -35,7 +35,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (response.success && response.data) {
         const { token: newToken, user: newUser } = response.data;
         setToken(newToken);
-        setUser(newUser);
+        setUser({
+          ...newUser,
+          created_at: newUser.created_at || new Date().toISOString(),
+          updated_at: newUser.updated_at || new Date().toISOString(),
+        });
         localStorage.setItem('token', newToken);
         localStorage.setItem('user', JSON.stringify(newUser));
         return true;

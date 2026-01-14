@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>项目任务管理系统 - PC端</title>
+  <style>
+      * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+      }
+
+      body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Microsoft YaHei', sans-serif;
+          background: #f5f7fa;
+          color: #2d3748;
+          line-height: 1.6;
+          overflow-x: hidden;
+      }
+
+      .container {
+          width: 100vw;
+          height: 100vh;
+          display: flex;
+          flex-direction: column;
+      }
+
+      /* 顶部工具栏 - 固定高度 */
+      .header {
+          background: white;
+          border-bottom: 1px solid #e2e8f0;
+          padding: 16px 32px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+          z-index: 10;
+          height: 80px;
+          flex-shrink: 0;
+      }
+
+      .header-left h1 {
+          font-size: 28px;
+          font-weight: 700;
+          color: #1a202c;
+          margin-bottom: 4px;
+      }
+
+      .header-subtitle {
+          color: #718096;
+          font-size: 14px;
+      }
+
+      .header-actions {
+          display: flex;
+          gap: 16px;
+          align-items: center;
+      }
+
+      .search-box {
+          padding: 12px 20px;
+          border: 2px solid #e2e8f0;
+          border-radius: 10px;
+          font-size: 14px;
+          width: 320px;
+          transition: all 0.2s;
+      }
+
+      .search-box:focus {
+          outline: none;
+          border-color: #4299e1;
+          box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+      }
+
+      .filter-select {
+          padding: 12px 20px;
+          border: 2px solid #e2e8f0;
+          border-radius: 10px;
+          font-size: 14px;
+          background: white;
+          cursor: pointer;
+          min-width: 140px;
+      }
+
+      .btn {
+          padding: 12px 24px;
+          border: none;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+      }
+
+      .btn-primary {
+          background: #4299e1;
+          color: white;
+      }
+
+      .btn-primary:hover {
+          background: #3182ce;
+          transform: translateY(-1px);
+      }
+
+      .btn-secondary {
+          background: #f7fafc;
+          color: #4a5568;
+          border: 2px solid #e2e8f0;
+      }
+
+      .btn-secondary:hover {
+          background: #edf2f7;
+          border-color: #cbd5e0;
+      }
+
+      /* 统计面板 - 修复文字显示问题 */
+      .stats-panel {
+          background: white;
+          border-bottom: 1px solid #e2e8f0;
+          padding: 20px 32px;
+          height: 120px;
+          flex-shrink: 0;
+      }
+
+      .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          gap: 24px;
+          height: 100%;
+      }
+
+      .stat-card {
+          border-radius: 12px;
+          padding: 20px;
+          text-align: center;
+          position: relative;
+          overflow: hidden;
+          transition: transform 0.2s;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+      }
+
+      .stat-card:hover {
+          transform: translateY(-2px);
+      }
+
+      /* 修复：为每个统计卡片设置不同的背景和文字颜色 */
+      .stat-card:nth-child(1) { 
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+      }
+      .stat-card:nth-child(2) { 
+          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+          color: white;
+      }
+      .stat-card:nth-child(3) { 
+          background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+          color: white;
+      }
+      .stat-card:nth-child(4) { 
+          background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+          color: white;
+      }
+      .stat-card:nth-child(5) { 
+          background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+          color: white;
+      }
+      .stat-card:nth-child(6) { 
+          background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+          color: #2d3748;
+      }
+
+      .stat-number {
+          font-size: 32px;
+          font-weight: 800;
+          margin-bottom: 4px;
+          position: relative;
+          z-index: 2;
+      }
+
+      .stat-label {
+          font-size: 13px;
+          font-weight: 500;
+          margin-bottom: 8px;
+          position: relative;
+          z-index: 2;
+      }
+
+      .stat-change {
+          font-size: 11px;
+          padding: 2px 8px;
+          border-radius: 12px;
+          display: inline-block;
+          background: rgba(255, 255, 255, 0.2);
+          position: relative;
+          z-index: 2;
+      }
+
+      /* 为第6个卡片（浅色背景）设置深色的stat-change */
+      .stat-card:nth-child(6) .stat-change {
+          background: rgba(45, 55, 72, 0.1);
+      }
+
+      /* 主内容区 - 占满剩余空间 */
+      .main-content {
+          flex: 1;
+          display: grid;
+          grid-template-columns: 420px 1fr;
+          gap: 0;
+          overflow: hidden;
+      }
+
+      /* 左侧项目列表 */
+      .project-sidebar {
+          background: white;
+          border-right: 1px solid #e2e8f0;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+      }
+
+      .sidebar-header {
+          padding: 24px 24px 16px;
+          border-bottom: 1px solid #f7fafc;
+          flex-shrink: 0;
+      }
+
+      .sidebar-title {
+          font-size: 20px;
+          font-weight: 700;
+          color: #1a202c;
+          margin-bottom: 16px;
+      }
+
+      .sidebar-controls {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 16px;
+      }
+
+      .control-tab {
+          padding: 8px 16px;
+          border: 1px solid #e2e8f0;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+          background: white;
+          color: #4a5568;
+      }
+
+      .control-tab.active {
+          background: #4299e1;
+          color: white;
+          border-color: #4299e1;
+      }
+
+      .control-tab:hover:not(.active) {
+          background: #f7fafc;
+      }
+
+      .project-list {
+          flex: 1;
+          overflow-y: auto;
+          padding: 8px 24px 24px;
+      }
+
+      .project-item {
+          background: #f8fafc;
+          border: 2px solid transparent;
+          border-radius: 12px;
+          padding: 20px;
+          margin-bottom: 16px;
+          cursor: pointer;
+          transition: all 0.2s;
+          position: relative;
+      }
+
+      .project-item:hover {
+          background: #edf2f7;
+          transform: translateX(4px);
+      }
+
+      .project-item.active {
+          background: #e6fffa;
+          border-color: #38b2ac;
+          transform: translateX(8px);
+      }
+
+      .project-item.active::before {
+          content: '';
+          position: absolute;
+          left: -2px;
+          top: 0;
+          bottom: 0;
+          width: 4px;
+          background: #38b2ac;
+          border-radius: 0 2px 2px 0;
+      }
+
+      .project-header {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          margin-bottom: 16px;
+      }
+
+      .project-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 20px;
+          background: linear-gradient(135deg, #4299e1, #3182ce);
+          color: white;
+          box-shadow: 0 4px 8px rgba(66, 153, 225, 0.3);
+      }
+
+      .project-info {
+          flex: 1;
+      }
+
+      .project-name {
+          font-size: 18px;
+          font-weight: 600;
+          color: #1a202c;
+          margin-bottom: 4px;
+      }
+
+      .project-manager {
+          font-size: 13px;
+          color: #718096;
+      }
+
+      .project-progress {
+          margin-bottom: 12px;
+      }
+
+      .progress-bar {
+          width: 100%;
+          height: 10px;
+          background: #e2e8f0;
+          border-radius: 5px;
+          overflow: hidden;
+          margin-bottom: 6px;
+      }
+
+      .progress-fill {
+          height: 100%;
+          border-radius: 5px;
+          transition: width 0.5s ease;
+          position: relative;
+      }
+
+      .progress-fill::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+          animation: shimmer 2s infinite;
+      }
+
+      @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+      }
+
+      .progress-normal {
+          background: linear-gradient(90deg, #48bb78, #38a169);
+      }
+
+      .progress-warning {
+          background: linear-gradient(90deg, #ed8936, #dd6b20);
+      }
+
+      .progress-danger {
+          background: linear-gradient(90deg, #f56565, #e53e3e);
+      }
+
+      .progress-text {
+          display: flex;
+          justify-content: space-between;
+          font-size: 13px;
+          color: #4a5568;
+          font-weight: 500;
+      }
+
+      .project-meta {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+          font-size: 12px;
+          color: #718096;
+      }
+
+      .meta-item {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+      }
+
+      /* 右侧任务详情区 */
+      .task-detail {
+          background: white;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+      }
+
+      .detail-header {
+          padding: 24px 32px;
+          border-bottom: 1px solid #f7fafc;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-shrink: 0;
+      }
+
+      .detail-title {
+          font-size: 24px;
+          font-weight: 700;
+          color: #1a202c;
+      }
+
+      .detail-actions {
+          display: flex;
+          gap: 12px;
+      }
+
+      .task-content {
+          flex: 1;
+          overflow-y: auto;
+          padding: 24px 32px;
+      }
+
+      /* 任务树结构 */
+      .task-tree {
+          max-width: none;
+      }
+
+      .task-node {
+          margin-bottom: 12px;
+          border-radius: 12px;
+          overflow: hidden;
+          border: 2px solid #f7fafc;
+          transition: all 0.2s;
+          background: white;
+      }
+
+      .task-node:hover {
+          border-color: #e2e8f0;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      }
+
+      .task-header {
+          padding: 20px 24px;
+          background: #fafbfc;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          min-height: 80px;
+      }
+
+      .task-expand {
+          width: 24px;
+          height: 24px;
+          border: 2px solid #cbd5e0;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          flex-shrink: 0;
+      }
+
+      .task-expand:hover {
+          background: #f7fafc;
+          border-color: #a0aec0;
+      }
+
+      .task-expand.expanded {
+          background: #4299e1;
+          color: white;
+          border-color: #4299e1;
+      }
+
+      .task-status {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          font-weight: bold;
+          flex-shrink: 0;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .status-completed {
+          background: linear-gradient(135deg, #48bb78, #38a169);
+          color: white;
+      }
+
+      .status-progress {
+          background: linear-gradient(135deg, #ed8936, #dd6b20);
+          color: white;
+      }
+
+      .status-pending {
+          background: linear-gradient(135deg, #a0aec0, #718096);
+          color: white;
+      }
+
+      .status-risk {
+          background: linear-gradient(135deg, #f56565, #e53e3e);
+          color: white;
+          animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.8; transform: scale(1.05); }
+      }
+
+      .task-main-info {
+          flex: 1;
+          display: grid;
+          grid-template-columns: 2fr 3fr 1fr;
+          gap: 24px;
+          align-items: center;
+      }
+
+      .task-title-section {
+          min-width: 0;
+      }
+
+      .task-title {
+          font-size: 18px;
+          font-weight: 600;
+          color: #1a202c;
+          margin-bottom: 4px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+      }
+
+      .task-subtitle {
+          font-size: 13px;
+          color: #718096;
+      }
+
+      .task-meta-info {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+          font-size: 13px;
+          color: #4a5568;
+      }
+
+      .meta-info-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          white-space: nowrap;
+      }
+
+      .task-progress-section {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          justify-content: flex-end;
+      }
+
+      .progress-circle {
+          width: 56px;
+          height: 56px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          font-weight: 700;
+          color: white;
+          position: relative;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .progress-circle::before {
+          content: '';
+          position: absolute;
+          top: -2px;
+          left: -2px;
+          right: -2px;
+          bottom: -2px;
+          border-radius: 50%;
+          background: conic-gradient(from 0deg, #4299e1, #4299e1 var(--progress, 0%), #e2e8f0 var(--progress, 0%));
+          z-index: -1;
+      }
+
+      .priority-badge {
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: 600;
+          white-space: nowrap;
+      }
+
+      .priority-high {
+          background: #fed7d7;
+          color: #c53030;
+      }
+
+      .priority-medium {
+          background: #faf089;
+          color: #975a16;
+      }
+
+      .priority-low {
+          background: #c6f6d5;
+          color: #276749;
+      }
+
+      .task-children {
+          background: #fafbfc;
+          display: none;
+          border-top: 1px solid #f1f5f9;
+      }
+
+      .task-children.expanded {
+          display: block;
+      }
+
+      .task-child {
+          padding: 16px 24px 16px 60px;
+          border-bottom: 1px solid #f7fafc;
+          display: grid;
+          grid-template-columns: 32px 2fr 3fr 1fr;
+          gap: 20px;
+          align-items: center;
+          position: relative;
+          min-height: 70px;
+      }
+
+      .task-child:last-child {
+          border-bottom: none;
+      }
+
+      .task-child::before {
+          content: '';
+          position: absolute;
+          left: 44px;
+          top: 0;
+          bottom: 0;
+          width: 2px;
+          background: #e2e8f0;
+      }
+
+      .task-child::after {
+          content: '';
+          position: absolute;
+          left: 44px;
+          top: 50%;
+          width: 16px;
+          height: 2px;
+          background: #e2e8f0;
+          transform: translateY(-50%);
+      }
+
+      .child-status {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          font-weight: bold;
+      }
+
+      /* 滚动条样式 */
+      ::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+          background: #f7fafc;
+          border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb {
+          background: #cbd5e0;
+          border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+          background: #a0aec0;
+      }
+
+      /* 响应式优化 */
+      @media (max-width: 1600px) {
+          .task-main-info {
+              grid-template-columns: 1.5fr 2fr 1fr;
+              gap: 16px;
+          }
+          
+          .task-meta-info {
+              grid-template-columns: 1fr;
+              gap: 8px;
+          }
+      }
+
+      @media (max-width: 1400px) {
+          .stats-grid {
+              grid-template-columns: repeat(3, 1fr);
+          }
+          
+          .main-content {
+              grid-template-columns: 380px 1fr;
+          }
+      }
+
+      @media (max-width: 1200px) {
+          .stats-grid {
+              grid-template-columns: repeat(2, 1fr);
+          }
+          
+          .main-content {
+              grid-template-columns: 350px 1fr;
+          }
+      }
+  </style>
+</head>
+<body>
+  <div class="container">
+      <!-- 顶部工具栏 -->
+      <div class="header">
+          <div class="header-left">
+              <h1>📋 项目任务管理系统</h1>
+              <div class="header-subtitle">全面掌控项目进度，精确分配任务责任</div>
+          </div>
+          <div class="header-actions">
+              <input type="text" class="search-box" placeholder="🔍 搜索项目、任务或负责人...">
+              <select class="filter-select">
+                  <option>全部状态</option>
+                  <option>进行中</option>
+                  <option>已完成</option>
+                  <option>未开始</option>
+                  <option>有风险</option>
+              </select>
+              <button class="btn btn-secondary">📊 导出报表</button>
+              <button class="btn btn-secondary">👥 团队管理</button>
+              <button class="btn btn-primary">➕ 新建项目</button>
+          </div>
+      </div>
+
+      <!-- 统计面板 -->
+      <div class="stats-panel">
+          <div class="stats-grid">
+              <div class="stat-card">
+                  <div class="stat-number">11</div>
+                  <div class="stat-label">总项目数</div>
+                  <div class="stat-change">📈 较上月 +2</div>
+              </div>
+              <div class="stat-card">
+                  <div class="stat-number">68</div>
+                  <div class="stat-label">总任务数</div>
+                  <div class="stat-change">✅ 已完成 42</div>
+              </div>
+              <div class="stat-card">
+                  <div class="stat-number">26</div>
+                  <div class="stat-label">进行中任务</div>
+                  <div class="stat-change">🔄 活跃进行</div>
+              </div>
+              <div class="stat-card">
+                  <div class="stat-number">73%</div>
+                  <div class="stat-label">整体完成率</div>
+                  <div class="stat-change">📊 稳步提升</div>
+              </div>
+              <div class="stat-card">
+                  <div class="stat-number">15</div>
+                  <div class="stat-label">团队成员</div>
+                  <div class="stat-change">👥 全员参与</div>
+              </div>
+              <div class="stat-card">
+                  <div class="stat-number">3</div>
+                  <div class="stat-label">风险任务</div>
+                  <div class="stat-change">⚠️ 需要关注</div>
+              </div>
+          </div>
+      </div>
+
+      <!-- 主内容区 -->
+      <div class="main-content">
+          <!-- 左侧项目列表 -->
+          <div class="project-sidebar">
+              <div class="sidebar-header">
+                  <h3 class="sidebar-title">项目列表</h3>
+                  <div class="sidebar-controls">
+                      <div class="control-tab active">全部</div>
+                      <div class="control-tab">进行中</div>
+                      <div class="control-tab">已完成</div>
+                      <div class="control-tab">风险</div>
+                  </div>
+              </div>
+              
+              <div class="project-list">
+                  <div class="project-item active">
+                      <div class="project-header">
+                          <div class="project-icon">🏗️</div>
+                          <div class="project-info">
+                              <div class="project-name">XX大厦BIM项目</div>
+                              <div class="project-manager">👤 项目经理: 王工</div>
+                          </div>
+                      </div>
+                      <div class="project-progress">
+                          <div class="progress-bar">
+                              <div class="progress-fill progress-warning" style="width: 65%"></div>
+                          </div>
+                          <div class="progress-text">
+                              <span>整体进度</span>
+                              <span><strong>65%</strong></span>
+                          </div>
+                      </div>
+                      <div class="project-meta">
+                          <div class="meta-item">📅 2024全年</div>
+                          <div class="meta-item">💰 2020万</div>
+                          <div class="meta-item">👥 8人团队</div>
+                          <div class="meta-item">⚠️ 中等风险</div>
+                      </div>
+                  </div>
+
+                  <div class="project-item">
+                      <div class="project-header">
+                          <div class="project-icon">🌳</div>
+                          <div class="project-info">
+                              <div class="project-name">YY花园景观设计</div>
+                              <div class="project-manager">👤 项目经理: 李工</div>
+                          </div>
+                      </div>
+                      <div class="project-progress">
+                          <div class="progress-bar">
+                              <div class="progress-fill progress-normal" style="width: 80%"></div>
+                          </div>
+                          <div class="progress-text">
+                              <span>整体进度</span>
+                              <span><strong>80%</strong></span>
+                          </div>
+                      </div>
+                      <div class="project-meta">
+                          <div class="meta-item">📅 上半年</div>
+                          <div class="meta-item">💰 800万</div>
+                          <div class="meta-item">👥 5人团队</div>
+                          <div class="meta-item">✅ 低风险</div>
+                      </div>
+                  </div>
+
+                  <div class="project-item">
+                      <div class="project-header">
+                          <div class="project-icon">🏢</div>
+                          <div class="project-info">
+                              <div class="project-name">ZZ广场市政工程</div>
+                              <div class="project-manager">👤 项目经理: 赵工</div>
+                          </div>
+                      </div>
+                      <div class="project-progress">
+                          <div class="progress-bar">
+                              <div class="progress-fill progress-danger" style="width: 45%"></div>
+                          </div>
+                          <div class="progress-text">
+                              <span>整体进度</span>
+                              <span><strong>45%</strong></span>
+                          </div>
+                      </div>
+                      <div class="project-meta">
+                          <div class="meta-item">📅 2024全年</div>
+                          <div class="meta-item">💰 1500万</div>
+                          <div class="meta-item">👥 12人团队</div>
+                          <div class="meta-item">🔴 高风险</div>
+                      </div>
+                  </div>
+
+                  <div class="project-item">
+                      <div class="project-header">
+                          <div class="project-icon">🏠</div>
+                          <div class="project-info">
+                              <div class="project-name">AA办公楼室内设计</div>
+                              <div class="project-manager">👤 项目经理: 孙工</div>
+                          </div>
+                      </div>
+                      <div class="project-progress">
+                          <div class="progress-bar">
+                              <div class="progress-fill progress-normal" style="width: 30%"></div>
+                          </div>
+                          <div class="progress-text">
+                              <span>整体进度</span>
+                              <span><strong>30%</strong></span>
+                          </div>
+                      </div>
+                      <div class="project-meta">
+                          <div class="meta-item">📅 下半年</div>
+                          <div class="meta-item">💰 600万</div>
+                          <div class="meta-item">👥 6人团队</div>
+                          <div class="meta-item">🟡 中风险</div>
+                      </div>
+                  </div>
+
+                  <div class="project-item">
+                      <div class="project-header">
+                          <div class="project-icon">🌉</div>
+                          <div class="project-info">
+                              <div class="project-name">BB大桥结构设计</div>
+                              <div class="project-manager">👤 项目经理: 周工</div>
+                          </div>
+                      </div>
+                      <div class="project-progress">
+                          <div class="progress-bar">
+                              <div class="progress-fill progress-normal" style="width: 90%"></div>
+                          </div>
+                          <div class="progress-text">
+                              <span>整体进度</span>
+                              <span><strong>90%</strong></span>
+                          </div>
+                      </div>
+                      <div class="project-meta">
+                          <div class="meta-item">📅 Q1-Q3</div>
+                          <div class="meta-item">💰 3000万</div>
+                          <div class="meta-item">👥 15人团队</div>
+                          <div class="meta-item">✅ 低风险</div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <!-- 右侧任务详情 -->
+          <div class="task-detail">
+              <div class="detail-header">
+                  <div class="detail-title">🏗️ XX大厦BIM项目 - 任务详情</div>
+                  <div class="detail-actions">
+                      <button class="btn btn-secondary">📊 进度报表</button>
+                      <button class="btn btn-secondary">👥 团队管理</button>
+                      <button class="btn btn-secondary">📅 时间规划</button>
+                      <button class="btn btn-primary">➕ 新建任务</button>
+                  </div>
+              </div>
+
+              <div class="task-content">
+                  <div class="task-tree">
+                      <!-- 主任务 -->
+                      <div class="task-node">
+                          <div class="task-header">
+                              <div class="task-expand expanded">−</div>
+                              <div class="task-status status-progress">🔄</div>
+                              <div class="task-main-info">
+                                  <div class="task-title-section">
+                                      <div class="task-title">🎯 XX大厦BIM项目整体实施</div>
+                                      <div class="task-subtitle">项目总体规划与执行管理</div>
+                                  </div>
+                                  <div class="task-meta-info">
+                                      <div class="meta-info-item">👤 负责人: 王工</div>
+                                      <div class="meta-info-item">📅 2024-01-01 至 2024-12-31</div>
+                                      <div class="meta-info-item">⏱️ 预计工时: 2000小时</div>
+                                      <div class="meta-info-item">💰 预算: 2020万元</div>
+                                  </div>
+                                  <div class="task-progress-section">
+                                      <div class="priority-badge priority-high">高优先级</div>
+                                      <div class="progress-circle progress-warning" style="--progress: 65%; background: #ed8936;">65%</div>
+                                  </div>
+                              </div>
+                          </div>
+                          <div class="task-children expanded">
+                              <!-- 子任务1 -->
+                              <div class="task-child">
+                                  <div class="child-status status-completed">✅</div>
+                                  <div class="task-title-section">
+                                      <div class="task-title">前期准备阶段</div>
+                                      <div class="task-subtitle">需求分析、方案设计、资源准备</div>
+                                  </div>
+                                  <div class="task-meta-info">
+                                      <div class="meta-info-item">👤 主工</div>
+                                      <div class="meta-info-item">📅 Q1 (已完成)</div>
+                                      <div class="meta-info-item">⏱️ 320小时</div>
+                                      <div class="meta-info-item">💰 预算: 200万</div>
+                                  </div>
+                                  <div class="task-progress-section">
+                                      <div class="priority-badge priority-medium">中优先级</div>
+                                      <div class="progress-circle" style="--progress: 100%; background: #48bb78;">100%</div>
+                                  </div>
+                              </div>
+
+                              <!-- 子任务2 -->
+                              <div class="task-child">
+                                  <div class="child-status status-progress">🔄</div>
+                                  <div class="task-title-section">
+                                      <div class="task-title">施工阶段</div>
+                                      <div class="task-subtitle">基础建设、主体施工、装修工程</div>
+                                  </div>
+                                  <div class="task-meta-info">
+                                      <div class="meta-info-item">👤 建筑队长</div>
+                                      <div class="meta-info-item">📅 Q2-Q4 (进行中)</div>
+                                      <div class="meta-info-item">⏱️ 1200小时</div>
+                                      <div class="meta-info-item">💰 预算: 1500万</div>
+                                  </div>
+                                  <div class="task-progress-section">
+                                      <div class="priority-badge priority-high">高优先级</div>
+                                      <div class="progress-circle" style="--progress: 45%; background: #ed8936;">45%</div>
+                                  </div>
+                              </div>
+
+                              <!-- 子任务3 -->
+                              <div class="task-child">
+                                  <div class="child-status status-pending">⏳</div>
+                                  <div class="task-title-section">
+                                      <div class="task-title">验收与交付</div>
+                                      <div class="task-subtitle">质量检测、竣工验收、项目交付</div>
+                                  </div>
+                                  <div class="task-meta-info">
+                                      <div class="meta-info-item">👤 验收员</div>
+                                      <div class="meta-info-item">📅 Q4 (未开始)</div>
+                                      <div class="meta-info-item">⏱️ 400小时</div>
+                                      <div class="meta-info-item">💰 预算: 320万</div>
+                                  </div>
+                                  <div class="task-progress-section">
+                                      <div class="priority-badge priority-low">低优先级</div>
+                                      <div class="progress-circle" style="--progress: 0%; background: #a0aec0;">0%</div>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+
+                      <!-- 施工阶段详细任务 -->
+                      <div class="task-node">
+                          <div class="task-header">
+                              <div class="task-expand expanded">−</div>
+                              <div class="task-status status-progress">🔄</div>
+                              <div class="task-main-info">
+                                  <div class="task-title-section">
+                                      <div class="task-title">🏗️ 施工阶段详细分解</div>
+                                      <div class="task-subtitle">具体施工任务的详细规划与执行</div>
+                                  </div>
+                                  <div class="task-meta-info">
+                                      <div class="meta-info-item">👤 建筑队长</div>
+                                      <div class="meta-info-item">📅 2024-03-01 至 2024-10-31</div>
+                                      <div class="meta-info-item">⏱️ 1200小时</div>
+                                      <div class="meta-info-item">💰 预算: 1500万</div>
+                                  </div>
+                                  <div class="task-progress-section">
+                                      <div class="priority-badge priority-high">高优先级</div>
+                                      <div class="progress-circle" style="--progress: 45%; background: #ed8936;">45%</div>
+                                  </div>
+                              </div>
+                          </div>
+                          <div class="task-children expanded">
+                              <div class="task-child">
+                                  <div class="child-status status-risk">🚨</div>
+                                  <div class="task-title-section">
+                                      <div class="task-title">基础施工</div>
+                                      <div class="task-subtitle">地基开挖、钢筋混凝土浇筑</div>
+                                  </div>
+                                  <div class="task-meta-info">
+                                      <div class="meta-info-item">👤 基础班组长</div>
+                                      <div class="meta-info-item">📅 3-5月 (资源紧张)</div>
+                                      <div class="meta-info-item">⏱️ 400小时</div>
+                                      <div class="meta-info-item">💰 预算: 600万</div>
+                                  </div>
+                                  <div class="task-progress-section">
+                                      <div class="priority-badge priority-high">⚠️ 资源紧张</div>
+                                      <div class="progress-circle" style="--progress: 80%; background: #f56565;">80%</div>
+                                  </div>
+                              </div>
+
+                              <div class="task-child">
+                                  <div class="child-status status-progress">🔄</div>
+                                  <div class="task-title-section">
+                                      <div class="task-title">主体建设</div>
+                                      <div class="task-subtitle">框架结构、楼层建设、外墙施工</div>
+                                  </div>
+                                  <div class="task-meta-info">
+                                      <div class="meta-info-item">👤 主体班组长</div>
+                                      <div class="meta-info-item">📅 4-8月 (进行中)</div>
+                                      <div class="meta-info-item">⏱️ 600小时</div>
+                                      <div class="meta-info-item">💰 预算: 800万</div>
+                                  </div>
+                                  <div class="task-progress-section">
+                                      <div class="priority-badge priority-medium">中优先级</div>
+                                      <div class="progress-circle" style="--progress: 30%; background: #ed8936;">30%</div>
+                                  </div>
+                              </div>
+
+                              <div class="task-child">
+                                  <div class="child-status status-pending">⏳</div>
+                                  <div class="task-title-section">
+                                      <div class="task-title">装修工程</div>
+                                      <div class="task-subtitle">室内装修、设备安装、环境美化</div>
+                                  </div>
+                                  <div class="task-meta-info">
+                                      <div class="meta-info-item">👤 装修队长</div>
+                                      <div class="meta-info-item">📅 7-10月 (未开始)</div>
+                                      <div class="meta-info-item">⏱️ 200小时</div>
+                                      <div class="meta-info-item">💰 预算: 100万</div>
+                                  </div>
+                                  <div class="task-progress-section">
+                                      <div class="priority-badge priority-low">低优先级</div>
+                                      <div class="progress-circle" style="--progress: 0%; background: #a0aec0;">0%</div>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <script>
+      // 项目切换功能
+      document.querySelectorAll('.project-item').forEach(item => {
+          item.addEventListener('click', function() {
+              // 移除其他项目的选中状态
+              document.querySelectorAll('.project-item').forEach(p => p.classList.remove('active'));
+              // 添加当前项目的选中状态
+              this.classList.add('active');
+              
+              // 更新任务详情区域标题
+              const projectName = this.querySelector('.project-name').textContent;
+              const projectIcon = this.querySelector('.project-icon').textContent;
+              document.querySelector('.detail-title').textContent = `${projectIcon} ${projectName} - 任务详情`;
+          });
+      });
+
+      // 任务展开/折叠功能
+      document.querySelectorAll('.task-expand').forEach(expand => {
+          expand.addEventListener('click', function(e) {
+              e.stopPropagation();
+              
+              const taskNode = this.closest('.task-node');
+              const children = taskNode.querySelector('.task-children');
+              
+              if (this.textContent === '+') {
+                  this.textContent = '−';
+                  this.classList.add('expanded');
+                  if (children) children.classList.add('expanded');
+              } else {
+                  this.textContent = '+';
+                  this.classList.remove('expanded');
+                  if (children) children.classList.remove('expanded');
+              }
+          });
+      });
+
+      // 控制标签切换
+      document.querySelectorAll('.control-tab').forEach(tab => {
+          tab.addEventListener('click', function() {
+              document.querySelectorAll('.control-tab').forEach(t => t.classList.remove('active'));
+              this.classList.add('active');
+              
+              const filterValue = this.textContent;
+              document.querySelectorAll('.project-item').forEach(project => {
+                  const riskText = project.querySelector('.meta-item:last-child').textContent;
+                  let shouldShow = true;
+                  
+                  switch(filterValue) {
+                      case '进行中':
+                          const progress = parseInt(project.querySelector('.progress-text strong').textContent);
+                          shouldShow = progress > 0 && progress < 100;
+                          break;
+                      case '已完成':
+                          const completed = parseInt(project.querySelector('.progress-text strong').textContent);
+                          shouldShow = completed === 100;
+                          break;
+                      case '风险':
+                          shouldShow = riskText.includes('高风险') || riskText.includes('中风险');
+                          break;
+                      default:
+                          shouldShow = true;
+                  }
+                  
+                  project.style.display = shouldShow ? 'block' : 'none';
+              });
+          });
+      });
+
+      // 搜索功能
+      document.querySelector('.search-box').addEventListener('input', function(e) {
+          const searchTerm = e.target.value.toLowerCase();
+          
+          // 搜索项目
+          document.querySelectorAll('.project-item').forEach(project => {
+              const projectName = project.querySelector('.project-name').textContent.toLowerCase();
+              const manager = project.querySelector('.project-manager').textContent.toLowerCase();
+              
+              if (projectName.includes(searchTerm) || manager.includes(searchTerm) || searchTerm === '') {
+                  project.style.display = 'block';
+              } else {
+                  project.style.display = 'none';
+              }
+          });
+
+          // 搜索任务
+          document.querySelectorAll('.task-child').forEach(task => {
+              const taskTitle = task.querySelector('.task-title').textContent.toLowerCase();
+              const assignee = task.querySelector('.meta-info-item').textContent.toLowerCase();
+              
+              if (taskTitle.includes(searchTerm) || assignee.includes(searchTerm) || searchTerm === '') {
+                  task.style.display = 'grid';
+              } else {
+                  task.style.display = 'none';
+              }
+          });
+      });
+
+      // 筛选功能
+      document.querySelector('.filter-select').addEventListener('change', function(e) {
+          const filterValue = e.target.value;
+          
+          document.querySelectorAll('.task-child').forEach(task => {
+              const status = task.querySelector('.child-status');
+              let shouldShow = true;
+              
+              switch(filterValue) {
+                  case '进行中':
+                      shouldShow = status.classList.contains('status-progress');
+                      break;
+                  case '已完成':
+                      shouldShow = status.classList.contains('status-completed');
+                      break;
+                  case '未开始':
+                      shouldShow = status.classList.contains('status-pending');
+                      break;
+                  case '有风险':
+                      shouldShow = status.classList.contains('status-risk');
+                      break;
+                  default:
+                      shouldShow = true;
+              }
+              
+              task.style.display = shouldShow ? 'grid' : 'none';
+          });
+      });
+
+      // 初始化
+      document.addEventListener('DOMContentLoaded', function() {
+          // 设置进度圆圈的CSS变量
+          document.querySelectorAll('.progress-circle').forEach(circle => {
+              const percentage = parseInt(circle.textContent);
+              circle.style.setProperty('--progress', percentage + '%');
+          });
+      });
+  </script>
+</body>
+</html>

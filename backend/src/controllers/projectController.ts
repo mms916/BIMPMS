@@ -104,6 +104,7 @@ export const getProjects = async (
       `SELECT p.*,
               u.full_name as leader_name,
               d.dept_name,
+              COALESCE(t.task_count, 0) as task_count,
               CASE
                 WHEN p.end_date < CURDATE() AND p.progress < 100 THEN 1
                 ELSE 0
@@ -111,6 +112,11 @@ export const getProjects = async (
        FROM projects p
        LEFT JOIN users u ON p.leader_id = u.user_id
        LEFT JOIN departments d ON p.dept_id = d.dept_id
+       LEFT JOIN (
+         SELECT project_id, COUNT(*) as task_count
+         FROM tasks
+         GROUP BY project_id
+       ) t ON p.project_id = t.project_id
        ${whereClause}
        ORDER BY p.${sortBy} ${sortOrder}
        LIMIT ? OFFSET ?`,
@@ -634,7 +640,12 @@ export const getProjectStats = async (
         SUM(CASE WHEN p.end_date < CURDATE() AND p.progress < 100 THEN 1 ELSE 0 END) as overdueProjects,
         SUM(p.contract_amount) as totalAmount,
         SUM(CASE WHEN p.settlement_status = '结算完成' THEN 1 ELSE 0 END) as settledProjects,
-        AVG(p.progress) as avgProgress
+        AVG(p.progress) as avgProgress,
+        SUM(p.payment_amount) as paymentAmount,
+        SUM(CASE WHEN p.created_at >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) THEN 1 ELSE 0 END) as newProjectsThisMonth,
+        SUM(CASE WHEN p.progress >= 70 THEN 1 ELSE 0 END) as aheadProjects,
+        SUM(CASE WHEN p.progress >= 30 AND p.progress < 70 THEN 1 ELSE 0 END) as normalProjects,
+        SUM(CASE WHEN p.progress < 30 THEN 1 ELSE 0 END) as behindProjects
        FROM projects p
        ${whereClause}`,
       params
@@ -653,6 +664,11 @@ export const getProjectStats = async (
       settledProjects: stat.settledProjects,
       settledRatio: Math.round(settledRatio * 10) / 10,
       avgProgress: Math.round(stat.avgProgress || 0),
+      paymentAmount: stat.paymentAmount || 0,
+      newProjectsThisMonth: stat.newProjectsThisMonth || 0,
+      aheadProjects: stat.aheadProjects || 0,
+      normalProjects: stat.normalProjects || 0,
+      behindProjects: stat.behindProjects || 0,
     };
 
     res.json({
@@ -689,6 +705,92 @@ export const generateContractNoHandler = async (
     res.status(500).json({
       success: false,
       message: '生成合同编号失败',
+    });
+  }
+};
+
+/**
+ * 获取当前用户参与的项目列表
+ * 包括：用户是负责人的项目、用户在参与人员列表中的项目、用户有任务的项目
+ */
+export const getMyProjects = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const user = req.user!;
+    const { page = '1', pageSize = '20', status, isOverdue } = req.query;
+
+    const pageNum = parseInt(page as string);
+    const size = parseInt(pageSize as string);
+    const offset = (pageNum - 1) * size;
+
+    // 构建查询条件：用户是负责人、参与人员、或有任务的项目
+    const conditions: string[] = [];
+    const params: any[] = [];
+
+    // 用户是负责人或在参与人员列表中或有任务
+    conditions.push(`(
+      p.leader_id = ?
+      OR JSON_CONTAINS(p.participants, ?)
+      OR p.project_id IN (
+        SELECT DISTINCT project_id FROM tasks WHERE assigned_to = ?
+      )
+    )`);
+    params.push(user.user_id, JSON.stringify([user.user_id]), user.user_id);
+
+    // 其他筛选条件
+    if (status) {
+      conditions.push('p.settlement_status = ?');
+      params.push(status);
+    }
+
+    if (isOverdue !== undefined) {
+      if (isOverdue === 'true') {
+        conditions.push('p.end_date < CURDATE() AND p.progress < 100');
+      } else {
+        conditions.push('(p.end_date >= CURDATE() OR p.progress >= 100)');
+      }
+    }
+
+    // 查询总数
+    const [countResult] = await pool.query(
+      `SELECT COUNT(*) as total FROM projects p WHERE ${conditions.join(' AND ')}`,
+      params
+    );
+    const total = (countResult as any)[0].total;
+
+    // 查询数据
+    const [projects] = await pool.query(
+      `SELECT p.*,
+        u.full_name as leader_name,
+        d.dept_name,
+        CASE
+          WHEN p.end_date < CURDATE() AND p.progress < 100 THEN 1
+          ELSE 0
+        END as is_overdue
+      FROM projects p
+      LEFT JOIN users u ON p.leader_id = u.user_id
+      LEFT JOIN departments d ON p.dept_id = d.dept_id
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY p.created_at DESC
+      LIMIT ? OFFSET ?`,
+      [...params, size, offset]
+    );
+
+    res.json({
+      data: projects,
+      pagination: {
+        current: pageNum,
+        pageSize: size,
+        total,
+      },
+    });
+  } catch (error) {
+    console.error('获取项目列表失败：', error);
+    res.status(500).json({
+      success: false,
+      message: '获取项目列表失败',
     });
   }
 };

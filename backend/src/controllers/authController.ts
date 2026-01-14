@@ -11,6 +11,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, password } = req.body;
 
+    console.log('登录请求:', { username, passwordLength: password?.length });
+
     if (!username || !password) {
       res.status(400).json({
         success: false,
@@ -29,6 +31,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     );
 
     const users = rows as any[];
+    console.log('查询结果:', users.length, '个用户');
 
     if (!Array.isArray(users) || users.length === 0) {
       res.status(401).json({
@@ -39,9 +42,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     const user = users[0];
+    console.log('用户信息:', user.username, user.role);
 
     // 验证密码
     const isPasswordValid = await bcrypt.compare(password, user.password);
+    console.log('密码验证结果:', isPasswordValid);
 
     if (!isPasswordValid) {
       res.status(401).json({
@@ -52,12 +57,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     // 生成JWT Token
+    console.log('开始生成Token...');
     const token = generateToken({
       user_id: user.user_id,
       username: user.username,
       role: user.role as UserRole,
       dept_id: user.dept_id,
     });
+    console.log('Token生成成功');
 
     // 返回用户信息和Token（不包含密码）
     const { password: _, ...userWithoutPassword } = user;
@@ -71,9 +78,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     });
   } catch (error) {
     console.error('登录失败：', error);
+    console.error('错误详情：', JSON.stringify(error, null, 2));
     res.status(500).json({
       success: false,
       message: '登录失败，服务器错误',
+      error: process.env.NODE_ENV === 'development' ? String(error) : undefined,
     });
   }
 };

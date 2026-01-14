@@ -59,6 +59,7 @@ export const useUpdateUser = () => {
     mutationFn: ({ id, data }: {
       id: number;
       data: {
+        username?: string;
         full_name: string;
         dept_id: number;
         role: string;
@@ -121,6 +122,7 @@ export const useCreateDepartment = () => {
     mutationFn: (data: {
       dept_name: string;
       dept_code: string;
+      parent_id?: number | null;
     }) => apiService.createDepartment(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
@@ -142,6 +144,7 @@ export const useUpdateDepartment = () => {
       data: {
         dept_name: string;
         dept_code: string;
+        parent_id?: number | null;
       };
     }) => apiService.updateDepartment(id, data),
     onSuccess: () => {

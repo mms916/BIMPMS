@@ -124,4 +124,9 @@ export interface ProjectStats {
   settledProjects: number;
   settledRatio: number;
   avgProgress: number;
+  paymentAmount: number;  // 已回款金额
+  newProjectsThisMonth: number;  // 本月新增项目数
+  aheadProjects: number;  // 进度超前项目数（进度>=70%）
+  normalProjects: number;  // 进度正常项目数（30%<=进度<70%）
+  behindProjects: number;  // 进度滞后项目数（进度<30%）
 }

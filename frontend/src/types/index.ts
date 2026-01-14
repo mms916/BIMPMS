@@ -71,6 +71,7 @@ export interface ProjectExtended extends Project {
   dept_name?: string;
   participant_names?: string[];
   is_overdue?: number;
+  task_count?: number;
 }
 
 // 分页参数接口
@@ -98,6 +99,7 @@ export interface ProjectStats {
   settledProjects: number | string;
   settledRatio: number;
   avgProgress: number;
+  paymentAmount: number;  // 已回款金额
 }
 
 // 登录请求接口

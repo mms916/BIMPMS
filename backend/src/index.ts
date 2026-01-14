@@ -6,6 +6,7 @@ import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
 import userRoutes from './routes/users';
 import departmentRoutes from './routes/departments';
+import taskRoutes from './routes/taskRoutes';
 
 // 加载环境变量
 dotenv.config();
@@ -20,7 +21,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // 请求日志
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
+  console.log(`📥 ${req.method} ${req.url}`);
+  console.log('完整URL:', req.protocol + '://' + req.get('host') + req.url);
   next();
 });
 
@@ -33,13 +35,17 @@ app.get('/health', (req, res) => {
 // 路由
 console.log('注册路由...');
 app.use('/api/auth', authRoutes);
-console.log('auth routes 已注册');
+console.log('auth routes 已注册，路径: /api/auth');
 app.use('/api/projects', projectRoutes);
-console.log('project routes 已注册');
+console.log('project routes 已注册，路径: /api/projects');
 app.use('/api/users', userRoutes);
-console.log('user routes 已注册');
+console.log('user routes 已注册，路径: /api/users');
 app.use('/api/departments', departmentRoutes);
-console.log('department routes 已注册');
+console.log('department routes 已注册，路径: /api/departments');
+app.use('/api/tasks', taskRoutes);
+console.log('task routes 已注册，路径: /api/tasks');
+console.log('项目进度计算路由: GET /api/tasks/project/:projectId/calculate-progress');
+console.log('项目进度同步路由: POST /api/tasks/project/:projectId/sync-progress');
 
 // 404处理
 app.use((req, res) => {

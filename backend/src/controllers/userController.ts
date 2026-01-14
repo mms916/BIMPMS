@@ -249,7 +249,7 @@ export const updateUser = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const { full_name, dept_id, role } = req.body;
+    const { username, full_name, dept_id, role } = req.body;
 
     // 验证必填字段
     if (!full_name || !dept_id || !role) {
@@ -271,7 +271,7 @@ export const updateUser = async (
 
     // 检查用户是否存在
     const [userRows] = await pool.query(
-      'SELECT user_id FROM users WHERE user_id = ?',
+      'SELECT user_id, username FROM users WHERE user_id = ?',
       [id]
     );
 
@@ -283,6 +283,37 @@ export const updateUser = async (
         message: '用户不存在',
       });
       return;
+    }
+
+    const existingUser = users[0];
+
+    // 如果提供了新的用户名，验证用户名格式和唯一性
+    if (username && username !== existingUser.username) {
+      // 验证用户名格式
+      const usernameRegex = /^[a-zA-Z0-9_]{3,50}$/;
+      if (!usernameRegex.test(username)) {
+        res.status(400).json({
+          success: false,
+          message: '用户名只能包含字母、数字和下划线，长度3-50个字符',
+        });
+        return;
+      }
+
+      // 检查用户名是否已被其他用户使用
+      const [duplicateRows] = await pool.query(
+        'SELECT user_id FROM users WHERE username = ? AND user_id != ?',
+        [username, id]
+      );
+
+      const duplicates = duplicateRows as any[];
+
+      if (Array.isArray(duplicates) && duplicates.length > 0) {
+        res.status(400).json({
+          success: false,
+          message: '该用户名已被使用',
+        });
+        return;
+      }
     }
 
     // 检查部门是否存在
@@ -301,10 +332,10 @@ export const updateUser = async (
       return;
     }
 
-    // 更新用户
+    // 更新用户（包含用户名）
     await pool.query(
-      'UPDATE users SET full_name = ?, dept_id = ?, role = ? WHERE user_id = ?',
-      [full_name, dept_id, role, id]
+      'UPDATE users SET username = COALESCE(?, username), full_name = ?, dept_id = ?, role = ? WHERE user_id = ?',
+      [username, full_name, dept_id, role, id]
     );
 
     // 查询更新后的用户信息
@@ -378,22 +409,6 @@ export const deleteUser = async (
       res.status(400).json({
         success: false,
         message: '该用户存在关联项目，无法删除',
-      });
-      return;
-    }
-
-    // 检查是否是参与人员
-    const [participantRows] = await pool.query(
-      'SELECT COUNT(*) as count FROM project_participants WHERE user_id = ?',
-      [id]
-    );
-
-    const participantProjects = participantRows as any[];
-
-    if (Array.isArray(participantProjects) && participantProjects[0].count > 0) {
-      res.status(400).json({
-        success: false,
-        message: '该用户参与了项目，无法删除',
       });
       return;
     }

@@ -18,11 +18,11 @@ INSERT INTO departments (dept_name, dept_code) VALUES
 
 -- ========================================
 -- 2. 插入用户数据
--- 密码统一为: password123 (bcrypt加密后的值)
+-- 密码统一为: 123 (bcrypt加密后的值)
 -- ========================================
 INSERT INTO users (username, password, full_name, avatar, dept_id, role) VALUES
 -- 管理员账号
-('admin', '$2b$10$rOzJQvEzM7m4JJ8GKv2vOe5JJ8XhVvJJ8XhVvJJ8XhVvJJ8XhVvJJ8', '系统管理员', NULL, 1, 'admin'),
+('admin', '$2b$10$KDjnKXQ/0EG0htQfYatSt..43/M0.9LrV6joG0GKOT4MyJNmXYxn.', '系统管理员', NULL, 1, 'admin'),
 -- 部门负责人
 ('dept_manager_xm', '$2b$10$rOzJQvEzM7m4JJ8GKv2vOe5JJ8XhVvJJ8XhVvJJ8XhVvJJ8XhVvJJ8', '张经理', NULL, 1, 'dept_manager'),
 ('dept_manager_js', '$2b$10$rOzJQvEzM7m4JJ8GKv2vOe5JJ8XhVvJJ8XhVvJJ8XhVvJJ8XhVvJJ8', '李经理', NULL, 2, 'dept_manager'),

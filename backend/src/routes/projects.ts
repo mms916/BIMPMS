@@ -7,6 +7,7 @@ import {
   deleteProject,
   getProjectStats,
   generateContractNoHandler,
+  getMyProjects,
 } from '../controllers/projectController';
 import { authMiddleware } from '../middleware/auth';
 import { canDeleteProject } from '../middleware/permission';
@@ -21,6 +22,9 @@ router.get('/', getProjects);
 
 // 获取统计数据
 router.get('/stats', getProjectStats);
+
+// 获取我参与的项目列表
+router.get('/my', getMyProjects);
 
 // 生成合同编号
 router.get('/contract/generate-no', generateContractNoHandler);

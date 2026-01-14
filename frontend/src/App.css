@@ -26,3 +26,499 @@ body {
 .overdue-row:hover {
   background-color: #ffccc7 !important;
 }
+
+/* ============================================
+   自定义侧边栏样式 - 蓝色渐变
+   ============================================ */
+.custom-sidebar {
+  background: linear-gradient(180deg, #1E3A8A 0%, #1E40AF 50%, #2563EB 100%) !important;
+  position: fixed;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+}
+
+.custom-sidebar .ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Logo 区域 */
+.sidebar-logo {
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar-logo-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #fff;
+}
+
+.sidebar-logo-text {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* 导航区域 */
+.sidebar-nav {
+  padding: 16px 12px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.nav-label {
+  color: rgba(255,255,255,0.5);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 8px 12px;
+  margin-top: 8px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  color: rgba(255,255,255,0.7);
+  text-decoration: none;
+  border-radius: 10px;
+  margin-bottom: 4px;
+  transition: all 0.2s ease;
+  position: relative;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.nav-item:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+.nav-item.active {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  font-weight: 500;
+}
+
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  background: #fff;
+  border-radius: 0 3px 3px 0;
+}
+
+.nav-item-icon {
+  font-size: 18px;
+  width: 20px;
+  text-align: center;
+}
+
+/* 用户信息区域 */
+.sidebar-user {
+  padding: 16px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.user-role {
+  color: rgba(255,255,255,0.6);
+  font-size: 12px;
+}
+
+/* ============================================
+   主内容区适配
+   ============================================ */
+.main-layout {
+  margin-left: 240px;
+  min-height: 100vh;
+}
+
+/* 面包屑导航 */
+.custom-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #9CA3AF;
+  margin-bottom: 20px;
+}
+
+.custom-breadcrumb a {
+  color: #6B7280;
+  text-decoration: none;
+}
+
+.custom-breadcrumb a:hover {
+  color: #2F54EB;
+}
+
+.custom-breadcrumb .current {
+  color: #1F2937;
+  font-weight: 500;
+}
+
+/* 页面标题区 */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.page-title h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1F2937;
+  margin: 0 0 4px 0;
+}
+
+.page-title p {
+  font-size: 14px;
+  color: #6B7280;
+  margin: 0;
+}
+
+/* ============================================
+   表格卡片样式
+   ============================================ */
+.table-card {
+  background: #FFFFFF;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  overflow: hidden;
+}
+
+.table-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #E5E7EB;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.table-title {
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.table-title .count {
+  background: #F0F5FF;
+  color: #2F54EB;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+/* 表格筛选区 */
+.table-filters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.search-box {
+  position: relative;
+}
+
+.search-box input {
+  width: 200px;
+  padding: 6px 12px 6px 32px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #F7F8FA;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #2F54EB;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(47, 84, 235, 0.1);
+}
+
+.search-box .search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9CA3AF;
+  font-size: 13px;
+}
+
+/* 自定义表格样式 */
+.custom-table .ant-table-thead > tr > th {
+  background: #F7F8FA !important;
+  padding: 14px 16px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #6B7280 !important;
+  border-bottom: none !important;
+}
+
+.custom-table .ant-table-tbody > tr > td {
+  padding: 14px 16px !important;
+  border-bottom: 1px solid #F0F0F0 !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+.custom-table .ant-table-tbody > tr:hover > td {
+  background: #F8FAFF !important;
+}
+
+/* 移除空行占位符 */
+.custom-table .ant-table-placeholder {
+  display: none !important;
+}
+
+/* 确保表格行高度一致 */
+.custom-table .ant-table-tbody > tr > td {
+  vertical-align: middle !important;
+}
+
+/* 移除表格容器额外的边距 */
+.custom-table .ant-table-container {
+  border: none !important;
+}
+
+.custom-table .ant-table-body {
+  border: none !important;
+}
+
+/* 项目信息列 */
+.project-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.project-name {
+  font-weight: 500;
+  color: #1F2937;
+}
+
+.project-code {
+  font-size: 12px;
+  color: #9CA3AF;
+}
+
+/* 日期范围列 */
+.date-range {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.date-range .end {
+  color: #9CA3AF;
+}
+
+/* 进度条样式 */
+.progress-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-track {
+  flex: 1;
+  height: 8px;
+  background: #E5E7EB;
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 100px;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+}
+
+.progress-fill.high {
+  background: linear-gradient(90deg, #36CFC9 0%, #13C2C2 100%);
+}
+
+.progress-fill.medium {
+  background: linear-gradient(90deg, #2F54EB 0%, #597EF7 100%);
+}
+
+.progress-fill.low {
+  background: linear-gradient(90deg, #FA8C16 0%, #FFC53D 100%);
+}
+
+.progress-text {
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 40px;
+}
+
+/* 负责人列 */
+.person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.person-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.person-avatar.blue { background: linear-gradient(135deg, #2F54EB 0%, #597EF7 100%); }
+.person-avatar.green { background: linear-gradient(135deg, #36CFC9 0%, #13C2C2 100%); }
+.person-avatar.purple { background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%); }
+.person-avatar.orange { background: linear-gradient(135deg, #FA8C16 0%, #FFC53D 100%); }
+
+/* 状态标签 */
+.status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-tag.success { background: #E6FFFB; color: #0D9488; }
+.status-tag.warning { background: #FFF7E6; color: #D97706; }
+.status-tag.danger { background: #FFF2F0; color: #FF4D4F; }
+.status-tag.default { background: #F3F4F6; color: #6B7280; }
+
+/* 金额列 */
+.amount { font-weight: 600; }
+.amount-secondary { color: #9CA3AF; font-size: 13px; }
+
+/* 操作按钮 */
+.action-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.action-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: #9CA3AF;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background: #F0F5FF;
+  color: #2F54EB;
+}
+
+/* 表格底部 */
+.table-footer {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #E5E7EB;
+}
+
+/* 按钮样式 */
+.btn-primary {
+  background: linear-gradient(135deg, #2F54EB 0%, #1D4ED8 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(47, 84, 235, 0.3);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(47, 84, 235, 0.4);
+}
+
+.btn-outline {
+  background: #fff;
+  color: #6B7280;
+  border: 1px solid #E5E7EB;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-outline:hover {
+  border-color: #2F54EB;
+  color: #2F54EB;
+}
