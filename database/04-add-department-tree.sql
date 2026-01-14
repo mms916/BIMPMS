@@ -3,6 +3,8 @@
 -- 添加 parent_id 字段支持部门层级关系
 -- ========================================
 
+USE bim_pms;
+
 -- 添加 parent_id 字段
 ALTER TABLE departments
 ADD COLUMN parent_id INT DEFAULT NULL COMMENT '父部门ID' AFTER dept_code,
